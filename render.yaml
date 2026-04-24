@@ -16,3 +16,5 @@ services:
         value: "0"
       - key: LOG_LEVEL
         value: INFO
+      - key: LOAD_MODELS_ON_STARTUP
+        value: "0"

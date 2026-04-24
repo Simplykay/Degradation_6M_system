@@ -4,14 +4,10 @@ from __future__ import annotations
 
 import json
 import pickle
+import threading
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
-
 from src.constants import CAT_FEATURES, CORE_FEATURES, FIELD_FEATURES, MODEL_DIR, WEATHER_FEATURES
-from src.features import engineer_features
-from src.predict import prepare_survival_lots
 
 
 QUALITY_LABELS = {0: "Degraded", 1: "AtRisk", 2: "HighQuality"}
@@ -48,24 +44,51 @@ class ModelService:
         self.artifacts: dict[str, object] = {}
         self.metrics: dict = {}
         self.metadata: dict = {}
+        self._load_lock = threading.Lock()
 
-    def load(self) -> None:
-        missing = [name for name in self.required_artifacts if not (self.model_dir / name).exists()]
+    def _missing(self, names: list[str]) -> list[str]:
+        return [name for name in names if not (self.model_dir / name).exists()]
+
+    def load_metadata(self) -> None:
+        missing = self._missing(["model_metadata.json", "m1_m5_metrics.json"])
         if missing:
-            raise FileNotFoundError(f"Missing model artifacts: {missing}")
-        for path in self.model_dir.glob("*.pkl"):
-            with path.open("rb") as f:
-                self.artifacts[path.stem] = pickle.load(f)
+            raise FileNotFoundError(f"Missing model metadata: {missing}")
         with (self.model_dir / "m1_m5_metrics.json").open(encoding="utf-8") as f:
             self.metrics = json.load(f)
         with (self.model_dir / "model_metadata.json").open(encoding="utf-8") as f:
             self.metadata = json.load(f)
+
+    def load(self, load_pickles: bool = True) -> None:
+        missing = [name for name in self.required_artifacts if not (self.model_dir / name).exists()]
+        if missing:
+            raise FileNotFoundError(f"Missing model artifacts: {missing}")
+        self.load_metadata()
+        if load_pickles:
+            self.ensure_artifacts_loaded()
+
+    def ensure_artifacts_loaded(self) -> None:
+        if self.artifacts:
+            return
+        with self._load_lock:
+            if self.artifacts:
+                return
+            missing = self._missing([name for name in self.required_artifacts if name.endswith(".pkl")])
+            if missing:
+                raise FileNotFoundError(f"Missing model artifacts: {missing}")
+            for path in self.model_dir.glob("*.pkl"):
+                with path.open("rb") as f:
+                    self.artifacts[path.stem] = pickle.load(f)
 
     @property
     def models_loaded(self) -> list[str]:
         return sorted(self.artifacts.keys())
 
     def _prep(self, lots: list[dict] | pd.DataFrame, prefix: str, target_features: list[str] | None = None) -> tuple[pd.DataFrame, np.ndarray]:
+        import numpy as np
+        import pandas as pd
+
+        from src.features import engineer_features
+
         df = pd.DataFrame(lots).copy() if not isinstance(lots, pd.DataFrame) else lots.copy()
         df = engineer_features(df)
         feature_key = target_features or self.metrics.get(prefix.upper().replace("M", "M") + "_FEATURES")
@@ -102,6 +125,8 @@ class ModelService:
         return [{"lot_id": row.get("lot_id"), "model": "M2", "prediction": float(p)} for row, p in zip(df.to_dict(orient="records"), pred)]
 
     def predict_m3(self, lots: list[dict] | pd.DataFrame) -> list[dict]:
+        import numpy as np
+
         df, x = self._prep(lots, "m3")
         model = self.artifacts["m3_3class_classifier"]
         proba = model.predict_proba(x)
@@ -133,6 +158,11 @@ class ModelService:
         return [{"lot_id": row.get("lot_id"), "model": "M5", "prediction": float(p)} for row, p in zip(df.to_dict(orient="records"), pred)]
 
     def prepare_survival(self, lots: list[dict] | pd.DataFrame) -> pd.DataFrame:
+        import pandas as pd
+
+        from src.features import engineer_features
+        from src.predict import prepare_survival_lots
+
         df = pd.DataFrame(lots).copy() if not isinstance(lots, pd.DataFrame) else lots.copy()
         prepared = engineer_features(df)
         if "duration" not in prepared.columns:
@@ -159,6 +189,8 @@ class ModelService:
         }
 
     def hazard_ratios(self) -> list[dict]:
+        import numpy as np
+
         cph = self.artifacts["m6_cox_ph"]
         summary = cph.summary.reset_index().rename(columns={"covariate": "feature"})
         out = []

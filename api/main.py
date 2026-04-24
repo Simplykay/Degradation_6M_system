@@ -33,9 +33,9 @@ def load_services(app: FastAPI) -> None:
         data_service.load(force_rebuild=os.getenv("REBUILD_CACHE", "0") == "1")
         logger.info("Row counts after cleaning/cache: %s", data_service.row_counts)
 
-        logger.info("Loading model artifacts from %s", model_dir)
-        model_service.load()
-        logger.info("Models loaded: %s", model_service.models_loaded)
+        logger.info("Loading model metadata from %s", model_dir)
+        model_service.load(load_pickles=os.getenv("LOAD_MODELS_ON_STARTUP", "0") == "1")
+        logger.info("Model metadata loaded; pickle artifacts loaded: %s", model_service.models_loaded)
 
         app.state.data_service = data_service
         app.state.model_service = model_service
@@ -87,6 +87,7 @@ def health():
     return {
         "status": "ok",
         "models_loaded": app.state.model_service.models_loaded,
+        "models_ready": bool(app.state.model_service.models_loaded),
         "row_counts": app.state.data_service.row_counts,
     }
 

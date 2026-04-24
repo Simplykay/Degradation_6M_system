@@ -22,4 +22,8 @@ def get_model_service(request: Request) -> "ModelService":
     if not request.app.state.ready or request.app.state.model_service is None:
         detail = request.app.state.load_error or "API model service is still loading"
         raise HTTPException(status_code=503, detail=detail)
+    try:
+        request.app.state.model_service.ensure_artifacts_loaded()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Model artifacts are still unavailable: {exc}") from exc
     return request.app.state.model_service
