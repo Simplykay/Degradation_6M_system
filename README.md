@@ -29,6 +29,20 @@ python -m src.train_m6
 python -m src.generate_business_report
 ```
 
+## Run Dashboard
+
+Start the API and dashboard in separate terminals:
+
+```bash
+uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+streamlit run app.py --server.port 8501
+```
+
+Access:
+
+- Dashboard: `http://localhost:8501`
+- API docs: `http://localhost:8000/docs`
+
 Current validation:
 
 - M1 AUC: `0.9707`

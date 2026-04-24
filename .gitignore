@@ -18,8 +18,10 @@ notebooks/
 *.pdf
 *.PDF
 CLAUDE.md
+DASHBOARD.md
 
 # Generated outputs
+outputs/cache/*
 outputs/*
 !outputs/.gitkeep
 !outputs/business_report/
