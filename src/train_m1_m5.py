@@ -18,6 +18,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.metrics import (
     average_precision_score,
     classification_report,
+    confusion_matrix,
     f1_score,
     mean_absolute_error,
     mean_squared_error,
@@ -31,6 +32,7 @@ from .constants import (
     CORE_FEATURES,
     FIELD_FEATURES,
     MODEL_DIR,
+    WEATHER_FEATURES,
     RANDOM_STATE,
     TEST_SEASONS,
     TRAIN_SEASONS,
@@ -54,8 +56,9 @@ def _prep(
 ) -> tuple[np.ndarray, pd.Series, SimpleImputer, dict[str, LabelEncoder], list[str]]:
     """Label-encode categoricals and median-impute model features."""
     work = df[df[target].notna()].copy()
-    selected = [col for col in features + cat_cols if col in work.columns]
+    selected = list(dict.fromkeys(col for col in features + cat_cols if col in work.columns))
     x_df = work[selected].copy()
+    x_df = x_df.loc[:, ~x_df.columns.duplicated()].copy()
     y = work[target].copy()
 
     if encoders is None:
@@ -93,6 +96,10 @@ def _save(name: str, obj: object) -> None:
         pickle.dump(obj, f)
 
 
+def _report_dict(y_true: pd.Series, y_pred: np.ndarray) -> dict[str, object]:
+    return classification_report(y_true, y_pred, zero_division=0, output_dict=True)
+
+
 def train_m1(train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame) -> dict[str, float]:
     features = CORE_FEATURES
     cat = CAT_FEATURES
@@ -122,6 +129,8 @@ def train_m1(train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
         "m1_auc": float(roc_auc_score(y_test, proba)),
         "m1_pr_auc": float(average_precision_score(y_test, proba)),
         "m1_f1": float(f1_score(y_test, pred)),
+        "m1_confusion_matrix": confusion_matrix(y_test, pred).tolist(),
+        "m1_classification_report": _report_dict(y_test, pred),
     }
     print("M1", metrics)
     print(classification_report(y_test, pred, zero_division=0))
@@ -186,7 +195,11 @@ def train_m3(train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
     )
     model.fit(x_train, y_train, eval_set=[(x_val, y_val)], verbose=False)
     pred = model.predict(x_test)
-    metrics = {"m3_macro_f1": float(f1_score(y_test, pred, average="macro"))}
+    metrics = {
+        "m3_macro_f1": float(f1_score(y_test, pred, average="macro")),
+        "m3_confusion_matrix": confusion_matrix(y_test, pred).tolist(),
+        "m3_classification_report": _report_dict(y_test, pred),
+    }
     print("M3", metrics)
     print(classification_report(y_test, pred, zero_division=0))
     _save("m3_3class_classifier", model)
@@ -202,8 +215,8 @@ def train_m4(train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
     if len(s1_train) < 50 or len(s1_test) < 10:
         return {"m4_status": "skipped: insufficient Stage 1 records"}
 
-    features = ["Moisture", "Mechanical_Damage", "Actual_Seed_Per_LB"]
-    cat = ["Origin_Region", "Variety"]
+    features = CORE_FEATURES
+    cat = CAT_FEATURES
     x_train, y_train, imputer, encoders, selected = _prep(s1_train, features, cat, "degraded_binary", fit=True)
     x_val, y_val, _, _, _ = _prep(s1_val, features, cat, "degraded_binary", imputer, encoders)
     x_test, y_test, _, _, _ = _prep(s1_test, features, cat, "degraded_binary", imputer, encoders)
@@ -227,6 +240,10 @@ def train_m4(train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
     metrics = {
         "m4_auc": float(roc_auc_score(y_test, proba)) if len(np.unique(y_test)) > 1 else float("nan"),
         "m4_f1_at_0_4": float(f1_score(y_test, pred)),
+        "m4_threshold": 0.4,
+        "m4_stage": 1,
+        "m4_confusion_matrix": confusion_matrix(y_test, pred).tolist(),
+        "m4_classification_report": _report_dict(y_test, pred),
     }
     print("M4", metrics)
     print(classification_report(y_test, pred, zero_division=0))
@@ -245,16 +262,8 @@ def train_m5(field_df: pd.DataFrame) -> dict[str, float | str]:
     if len(train_df) < 50 or len(test_df) < 10:
         return {"m5_status": "skipped: insufficient field-enriched records"}
 
-    features = [
-        "pre_defol_dd_60_cap90",
-        "post_defol_dd_60_cap90",
-        "pre_defol_total_precipitation",
-        "season_length",
-        "irrigation_is_dryland",
-        "bales_per_module",
-        "season_age",
-    ]
-    cat = ["Variety", "Origin_Region", "irrigation_type"]
+    features = CORE_FEATURES + FIELD_FEATURES + WEATHER_FEATURES
+    cat = ["Variety", "Origin_Region", "Grower_Region", "irrigation_type"]
     x_train, y_train, imputer, encoders, selected = _prep(train_df, features, cat, "CT_Current", fit=True)
     x_test, y_test, _, _, _ = _prep(test_df, features, cat, "CT_Current", imputer, encoders)
 

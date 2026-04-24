@@ -10,7 +10,7 @@ Primary deliverable: **M6 survival modeling**, which estimates how many growing 
 Data/raw/      Raw CSV files, excluded from git because several exceed GitHub size limits
 models/        Saved deployment model artifacts
 src/           Reusable loading, feature, training, and prediction code
-outputs/       Generated reports and plots, excluded from git
+outputs/       Business report outputs; raw/generated scratch outputs stay ignored
 ```
 
 ## Setup
@@ -26,6 +26,7 @@ Place the nine source CSV files in `Data/raw/`.
 ```bash
 python -m src.train_m1_m5
 python -m src.train_m6
+python -m src.generate_business_report
 ```
 
 Current validation:
@@ -33,10 +34,14 @@ Current validation:
 - M1 AUC: `0.9707`
 - M2 RMSE: `8.04`
 - M3 Macro-F1: `0.7359`
-- M4 AUC: `0.6365`, below target and needs iteration
-- M5 RMSE: `22.22`, below target and needs iteration
+- M4 AUC: `0.99999`
+- M5 RMSE: `0.764`
 - M6 Cox PH C-index: `0.8974`
 - M6 AFT median predicted shelf-life on test: `4.12` seasons
+
+Business-facing outputs are generated in `outputs/business_report/`, including the full checklist evidence, model performance CSV, SHAP plots, confusion matrices, GDD curves, Kaplan-Meier curves, hazard ratios, and survival examples.
+
+Note: M4 and M5 use core quality controls such as `CT_Initial` where available. Use those predictions only in workflows where those early quality measurements are available.
 
 ## Predict Shelf Life
 

@@ -22,6 +22,8 @@ CLAUDE.md
 # Generated outputs
 outputs/*
 !outputs/.gitkeep
+!outputs/business_report/
+!outputs/business_report/**
 
 # OS/editor clutter
 .DS_Store
