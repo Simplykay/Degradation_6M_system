@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: degradation-api
+    runtime: python
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.3
+      - key: DATA_DIR
+        value: Data/raw
+      - key: MODEL_DIR
+        value: models
+      - key: REBUILD_CACHE
+        value: "0"
+      - key: LOG_LEVEL
+        value: INFO

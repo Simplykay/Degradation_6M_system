@@ -24,6 +24,8 @@ DASHBOARD.md
 outputs/cache/*
 outputs/*
 !outputs/.gitkeep
+!outputs/cache/
+!outputs/cache/*.parquet
 !outputs/business_report/
 !outputs/business_report/**
 
