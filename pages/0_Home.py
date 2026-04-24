@@ -6,7 +6,7 @@ import streamlit as st
 
 from dashboard.client import api_get, require_api
 from dashboard.filters import render_filters
-from dashboard.theme import ACCENT_BLUE, ACCENT_RISK, ACCENT_SAFE, ACCENT_WARN, add_ct_threshold, apply_page_style, style_fig
+from dashboard.theme import ACCENT_BLUE, ACCENT_RISK, ACCENT_SAFE, ACCENT_WARN, add_ct_threshold, apply_page_style, page_header, section_label, style_fig
 
 apply_page_style()
 if not require_api():
@@ -21,8 +21,10 @@ variety = pd.DataFrame(api_get("/eda/variety_risk", {"top_n": 15}))
 meta = api_get("/meta")
 metrics = meta["metrics"]
 
-st.title("Cotton Seed Degradation Intelligence")
-st.caption(f"Season window: {overview['season_min']} to {overview['season_max']}")
+page_header(
+    "Degradation Intelligence Hub",
+    f"Season window {overview['season_min']} to {overview['season_max']}. Live model, EDA, and survival signals from the cleaned local data.",
+)
 
 cols = st.columns(6)
 cols[0].metric("Total Lots", f"{overview['total_lots']:,}")
@@ -39,19 +41,19 @@ with left:
     fig.add_trace(go.Scatter(x=trend["SEASON_YR"], y=trend["ci_high"], mode="lines", showlegend=False, line=dict(width=0)))
     fig.add_trace(go.Scatter(x=trend["SEASON_YR"], y=trend["ci_low"], mode="lines", fill="tonexty", name="95% CI", line=dict(width=0), fillcolor="rgba(88,166,255,0.18)"))
     add_ct_threshold(fig)
-    st.plotly_chart(style_fig(fig).update_layout(title="Seasonal CT Trend"), use_container_width=True)
+    st.plotly_chart(style_fig(fig).update_layout(title="Seasonal CT Trend"), width="stretch")
 with middle:
     fig = go.Figure(go.Bar(x=stage["degraded_rate"], y=stage["Stage"].astype(str), orientation="h", marker_color=ACCENT_RISK, text=stage["degraded_rate"].map(lambda x: f"{x:.1%}")))
-    st.plotly_chart(style_fig(fig).update_layout(title="Stage Degradation Gradient", xaxis_tickformat=".0%"), use_container_width=True)
+    st.plotly_chart(style_fig(fig).update_layout(title="Stage Degradation Gradient", xaxis_tickformat=".0%"), width="stretch")
 with right:
     if not region.empty:
         fig = go.Figure(go.Bar(x=region["Origin_Region"], y=region["degraded_rate"], marker_color=ACCENT_WARN))
-        st.plotly_chart(style_fig(fig).update_layout(title="Regional Risk", yaxis_tickformat=".0%"), use_container_width=True)
+        st.plotly_chart(style_fig(fig).update_layout(title="Regional Risk", yaxis_tickformat=".0%"), width="stretch")
 
 col1, col2 = st.columns(2)
 with col1:
     fig = go.Figure(go.Bar(y=variety["Variety"], x=variety["degraded_rate"], orientation="h", marker_color=ACCENT_RISK))
-    st.plotly_chart(style_fig(fig).update_layout(title="Variety Risk Rankings", xaxis_tickformat=".0%"), use_container_width=True)
+    st.plotly_chart(style_fig(fig).update_layout(title="Variety Risk Rankings", xaxis_tickformat=".0%"), width="stretch")
 with col2:
     perf = pd.DataFrame(
         [
@@ -64,5 +66,5 @@ with col2:
         ],
         columns=["Metric", "Value", "Target"],
     )
-    st.subheader("Model Performance Summary")
-    st.dataframe(perf, hide_index=True, use_container_width=True)
+    section_label("Model Performance Summary")
+    st.dataframe(perf, hide_index=True, width="stretch")
