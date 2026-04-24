@@ -41,6 +41,33 @@ def apply_page_style() -> None:
       padding-bottom: 2rem;
       max-width: 1480px;
   }
+  header[data-testid="stHeader"] {
+      background: #0D1117;
+      border-bottom: 1px solid #21262D;
+      min-height: 3rem;
+  }
+  [data-testid="stTopNavLinkContainer"] {
+      gap: 0.2rem;
+      padding-left: 0.35rem;
+  }
+  [data-testid="stTopNavLink"],
+  [data-testid="stTopNavLink"] a {
+      min-height: 2.1rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 6px;
+  }
+  [data-testid="stTopNavLink"] p,
+  [data-testid="stTopNavLink"] span,
+  [data-testid="stTopNavPopover"] p,
+  [data-testid="stTopNavPopover"] span {
+      font-size: 0.82rem !important;
+      line-height: 1.1;
+  }
+  [data-testid="stTopNavPopover"] button {
+      min-height: 2.1rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 6px;
+  }
   h1, h2, h3 {
       letter-spacing: 0;
       font-weight: 650;

@@ -18,7 +18,7 @@ def render_filters() -> dict:
         overview = api_get("/eda/regional_performance")
         regions = [row["Origin_Region"] for row in overview.get("Origin_Region", [])]
         selected_regions = st.multiselect("Origin region", regions, default=regions)
-        apply = st.button("Apply Filters", use_container_width=True)
+        apply = st.button("Apply Filters", width="stretch")
         if apply:
             st.rerun()
     return {
