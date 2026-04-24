@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Local environments
+.venv/
+venv/
+env/
+
+# Raw source data is too large for normal GitHub pushes.
+Data/raw/*
+!Data/raw/.gitkeep
+
+# Local research/support files, not deployment payload.
+notebooks/
+*.pdf
+*.PDF
+CLAUDE.md
+
+# Generated outputs
+outputs/*
+!outputs/.gitkeep
+
+# OS/editor clutter
+.DS_Store
+Thumbs.db

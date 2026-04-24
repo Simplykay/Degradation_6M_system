@@ -1,0 +1,50 @@
+{
+  "CT_THRESHOLD": 60,
+  "RANDOM_STATE": 42,
+  "CURRENT_YEAR": 2026,
+  "TRAIN_SEASONS": [
+    2017,
+    2019,
+    2020,
+    2021
+  ],
+  "VAL_SEASONS": [
+    2022
+  ],
+  "TEST_SEASONS": [
+    2023,
+    2024
+  ],
+  "M6_FEATURES": [
+    "WG_Current",
+    "CT_Initial",
+    "Moisture",
+    "Mechanical_Damage",
+    "Actual_Seed_Per_LB",
+    "Stage",
+    "season_age"
+  ],
+  "M6_CAT_FEATURES": [
+    "Origin_Region"
+  ],
+  "M6_MODEL_COLUMNS": [
+    "duration",
+    "event",
+    "WG_Current",
+    "CT_Initial",
+    "Moisture",
+    "Mechanical_Damage",
+    "Actual_Seed_Per_LB",
+    "Stage",
+    "season_age",
+    "Origin_Region_AZ",
+    "Origin_Region_CA",
+    "Origin_Region_MS",
+    "Origin_Region_TX"
+  ],
+  "survival_event_col": "event",
+  "survival_duration_col": "duration",
+  "survival_time_unit": "growing_seasons",
+  "m6_c_index_test": 0.897447071749329,
+  "m6_aft_test_median_shelf_life": 4.1190086878919665
+}
