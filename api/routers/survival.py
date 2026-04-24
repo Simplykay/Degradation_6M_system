@@ -2,23 +2,30 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
-import numpy as np
-import pandas as pd
 from fastapi import APIRouter, Depends
-from lifelines import KaplanMeierFitter
-from lifelines.statistics import multivariate_logrank_test
 
 from api.dependencies import get_data_service, get_model_service
 from api.schemas import LotFeatures, SurvivalPrediction
-from api.services.data_service import DataService, records
-from api.services.model_service import ModelService
+
+if TYPE_CHECKING:
+    from api.services.data_service import DataService
+    from api.services.model_service import ModelService
 
 router = APIRouter(prefix="/survival", tags=["Survival"])
 
 
-def _km_curve(df: pd.DataFrame, label: str) -> dict:
+def records(df) -> list[dict]:
+    import numpy as np
+
+    return df.replace({np.nan: None}).to_dict(orient="records")
+
+
+def _km_curve(df, label: str) -> dict:
+    import numpy as np
+    from lifelines import KaplanMeierFitter
+
     km = KaplanMeierFitter(label=label)
     km.fit(df["duration"].astype(float), event_observed=df["event"].astype(bool))
     curve = km.survival_function_.reset_index()
@@ -34,6 +41,8 @@ def _km_curve(df: pd.DataFrame, label: str) -> dict:
 
 @router.get("/kaplan_meier")
 def kaplan_meier(data: Annotated[DataService, Depends(get_data_service)]):
+    from lifelines.statistics import multivariate_logrank_test
+
     surv = data.df[data.df["CT_Current"].notna()].copy()
     result = {
         "overall": _km_curve(surv, "All lots"),
@@ -61,6 +70,8 @@ def hazard_ratios(models: Annotated[ModelService, Depends(get_model_service)]):
 
 @router.get("/aft_distribution")
 def aft_distribution(data: Annotated[DataService, Depends(get_data_service)], models: Annotated[ModelService, Depends(get_model_service)]):
+    import numpy as np
+
     sample = data.df[data.df["CT_Current"].notna()].sample(min(5000, len(data.df)), random_state=42)
     matrix = models.prepare_survival(sample)
     med = models.artifacts["m6_aft_weibull"].predict_median(matrix).replace([np.inf, -np.inf], np.nan).dropna()

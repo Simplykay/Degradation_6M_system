@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Depends, Query
 
 from api.dependencies import get_data_service
-from api.services.data_service import DataService
+
+if TYPE_CHECKING:
+    from api.services.data_service import DataService
 
 router = APIRouter(prefix="/eda", tags=["EDA"])
 

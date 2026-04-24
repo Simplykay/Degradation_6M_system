@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.dependencies import get_model_service
 from api.schemas import BatchPredictionResponse, LotFeatures, PredictionResponse
-from api.services.model_service import ModelService
+
+if TYPE_CHECKING:
+    from api.services.model_service import ModelService
 
 router = APIRouter(prefix="/predict", tags=["Predictions"])
 

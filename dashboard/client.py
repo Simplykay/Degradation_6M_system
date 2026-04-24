@@ -8,7 +8,21 @@ from typing import Any
 import requests
 import streamlit as st
 
-API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+DEFAULT_API_BASE_URL = "https://degradation-6m.onrender.com"
+
+
+def _api_base_url() -> str:
+    env_url = os.getenv("API_BASE_URL")
+    if env_url:
+        return env_url.rstrip("/")
+    try:
+        secret_url = st.secrets.get("API_BASE_URL")
+    except Exception:
+        secret_url = None
+    return (secret_url or DEFAULT_API_BASE_URL).rstrip("/")
+
+
+API_BASE_URL = _api_base_url()
 
 
 def _url(path: str) -> str:
@@ -34,5 +48,5 @@ def require_api() -> bool:
         return True
     except Exception as exc:
         st.error(f"FastAPI backend is not reachable at {API_BASE_URL}: {exc}")
-        st.code("uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload")
+        st.code('API_BASE_URL="https://degradation-6m.onrender.com"')
         return False
