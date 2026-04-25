@@ -1,0 +1,34 @@
+services:
+  api:
+    build: .
+    image: degradation-system:latest
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+    environment:
+      DATA_DIR: /app/Data/raw
+      MODEL_DIR: /app/models
+      REBUILD_CACHE: "0"
+      LOAD_MODELS_ON_STARTUP: "0"
+      LOG_LEVEL: INFO
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./Data/raw:/app/Data/raw:ro
+      - ./outputs/cache:/app/outputs/cache
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health | grep -q '\"status\":\"ok\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  streamlit:
+    build: .
+    image: degradation-system:latest
+    command: streamlit run app.py --server.address=0.0.0.0 --server.port=8501 --server.headless=true
+    environment:
+      API_BASE_URL: http://api:8000
+    ports:
+      - "8501:8501"
+    depends_on:
+      api:
+        condition: service_healthy

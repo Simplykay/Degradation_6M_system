@@ -43,6 +43,33 @@ Access:
 - Dashboard: `http://localhost:8501`
 - API docs: `http://localhost:8000/docs`
 
+## Run With Docker
+
+The Docker setup runs both services locally:
+
+- FastAPI API: `http://localhost:8000`
+- Streamlit dashboard: `http://localhost:8501`
+
+Raw CSVs are not baked into the image. Keep the nine source CSV files in `Data/raw/`; Docker Compose mounts that folder into the API container.
+
+```bash
+docker compose up --build
+```
+
+Health checks:
+
+```bash
+curl http://localhost:8000/health
+curl http://localhost:8000/docs
+```
+
+For a Streamlit-only container deployment, build the same image and provide `API_BASE_URL` for the hosted API:
+
+```bash
+docker build -t degradation-streamlit .
+docker run --rm -p 8501:8501 -e API_BASE_URL="https://degradation-6m.onrender.com" degradation-streamlit
+```
+
 Current validation:
 
 - M1 AUC: `0.9707`
